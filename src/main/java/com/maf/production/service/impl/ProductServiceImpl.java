@@ -10,13 +10,17 @@ import com.maf.production.repository.CategoryRepository;
 import com.maf.production.repository.ProductRepository;
 import com.maf.production.repository.SubcategoryRepository;
 import com.maf.production.service.ProductService;
+import com.maf.production.util.FileUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class ProductServiceImpl implements ProductService {
 
     @Autowired
@@ -27,6 +31,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private SubcategoryRepository subcategoryRepository;
+
+    @Autowired
+    private FileUtil fileUtil;
 
     @Override
     public List<ProductDTO> getAllProducts() {
@@ -42,11 +49,25 @@ public class ProductServiceImpl implements ProductService {
         return convertToDTO(product);
     }
 
+    // Новая реализация с обработкой MultipartFile
     @Override
-    public ProductDTO createProduct(ProductDTO productDTO) {
-        Product product = convertToEntity(productDTO);
-        Product savedProduct = productRepository.save(product);
-        return convertToDTO(savedProduct);
+    public ProductDTO create(ProductDTO dto, MultipartFile file) {
+        // Собираем сущность из DTO
+        Product product = convertToEntity(dto);
+
+        // Сохраняем файл картинки, если передан
+        if (file != null && !file.isEmpty()) {
+            try {
+                String filename = fileUtil.saveFile(file);
+                product.setImageUrl(filename);
+            } catch (Exception e) {
+                throw new RuntimeException("Не удалось сохранить файл изображения", e);
+            }
+        }
+
+        // Сохраняем продукт и возвращаем DTO
+        Product saved = productRepository.save(product);
+        return convertToDTO(saved);
     }
 
     @Override

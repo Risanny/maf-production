@@ -1,5 +1,12 @@
 package com.maf.production.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.maf.production.dto.ApiResponse;
+import com.maf.production.security.jwt.AuthEntryPointJwt;
+import com.maf.production.security.jwt.AuthTokenFilter;
+import com.maf.production.security.services.UserDetailsServiceImpl;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,30 +24,21 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.maf.production.dto.ApiResponse;
-import com.maf.production.security.jwt.AuthEntryPointJwt;
-import com.maf.production.security.jwt.AuthTokenFilter;
-import com.maf.production.security.services.UserDetailsServiceImpl;
-
-import jakarta.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
-import java.time.LocalDateTime;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class WebSecurityConfig {
     @Autowired
-    UserDetailsServiceImpl userDetailsService;
+    private UserDetailsServiceImpl userDetailsService;
 
     @Autowired
     private AuthEntryPointJwt unauthorizedHandler;
 
     private ObjectMapper createObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        mapper.registerModule(new JavaTimeModule());
         return mapper;
     }
 
@@ -51,12 +49,10 @@ public class WebSecurityConfig {
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-
-        return authProvider;
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
     }
 
     @Bean
@@ -71,65 +67,63 @@ public class WebSecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        // Отключаем CSRF и настраиваем stateless сессии
+        // Регистрируем провайдер
+        http.authenticationProvider(authenticationProvider());
+
+        // Отключаем CSRF, делаем сессии stateless
         http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        // Обработка ошибок
-        http.exceptionHandling(exceptions -> exceptions
-                .authenticationEntryPoint((request, response, authException) -> {
+        // Обработка ошибок аутентификации и доступа
+        http.exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authEx) -> {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-
-                    ApiResponse<?> apiResponse = ApiResponse.error("Необходима аутентификация: " + authException.getMessage());
-
+                    ApiResponse<?> error = ApiResponse.error("Необходима аутентификация: " + authEx.getMessage());
                     try {
-                        createObjectMapper().writeValue(response.getOutputStream(), apiResponse);
+                        createObjectMapper().writeValue(response.getOutputStream(), error);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 })
-                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                .accessDeniedHandler((request, response, accessEx) -> {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-
-                    ApiResponse<?> apiResponse = ApiResponse.error("Доступ запрещен: " + accessDeniedException.getMessage());
-
+                    ApiResponse<?> error = ApiResponse.error("Доступ запрещен: " + accessEx.getMessage());
                     try {
-                        createObjectMapper().writeValue(response.getOutputStream(), apiResponse);
+                        createObjectMapper().writeValue(response.getOutputStream(), error);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 })
         );
 
-        // Настраиваем авторизацию запросов
-        http.authorizeHttpRequests(auth ->
-                auth
-                        // Публичные эндпоинты
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/test/public").permitAll()  // Добавь эту строку!
-                        .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/subcategories/**").permitAll()
-                        // Защищенные эндпоинты требуют аутентификации
-                        .requestMatchers(HttpMethod.POST, "/api/products/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.PUT, "/api/products/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/categories/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.PUT, "/api/categories/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/categories/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/subcategories/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.PUT, "/api/subcategories/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/subcategories/**").hasRole("ADMIN")
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/manager/**").hasAnyRole("ADMIN", "MANAGER")
-                        .anyRequest().authenticated()
+        // Права доступа
+        http.authorizeHttpRequests(auth -> auth
+                // Раздача SPA и статики
+                .requestMatchers(
+                        "/", "/index.html", "/app.js", "/styles.css",
+                        "/favicon.ico", "/uploads/**"
+                ).permitAll()
+                // Логин/регистрация и тест публичный
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/test/public").permitAll()
+                // Публичные GET-эндпоинты каталога
+                .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/subcategories/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/order").permitAll()
+                .requestMatchers("/admin.html", "/admin.js").permitAll()
+                .requestMatchers("/api/auth/signin").permitAll()
+                // Всё остальное — по JWT
+                .anyRequest().authenticated()
         );
 
-        // Добавляем провайдер аутентификации и фильтр JWT
-        http.authenticationProvider(authenticationProvider());
-        http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+        // JWT-фильтр перед проверкой логина
+        http.addFilterBefore(
+                authenticationJwtTokenFilter(),
+                UsernamePasswordAuthenticationFilter.class
+        );
 
         return http.build();
     }

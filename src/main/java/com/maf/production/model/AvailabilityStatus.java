@@ -1,5 +1,8 @@
 package com.maf.production.model;
 
+import lombok.Getter;
+
+@Getter
 public enum AvailabilityStatus {
     AVAILABLE("Включено"),
     RESERVED("В резерве"),
@@ -11,7 +14,4 @@ public enum AvailabilityStatus {
         this.displayName = displayName;
     }
 
-    public String getDisplayName() {
-        return displayName;
-    }
 }

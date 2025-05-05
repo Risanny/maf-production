@@ -1,0 +1,213 @@
+/* Сброс базовых отступов */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* Шрифты и фон */
+body {
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    background: #fafafa;
+    color: #333;
+}
+
+/* Хедер */
+header {
+    background: #2c3e50;
+    color: #ecf0f1;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    font-size: 1.5rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Фильтры */
+.filters {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+}
+.filters select,
+.filters input {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    flex: 1;
+}
+.filters button {
+    padding: 0.5rem 1rem;
+    background: #27ae60;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.filters button:hover {
+    background: #219150;
+}
+
+/* Сетка каталога */
+.catalog {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+}
+
+/* Карточка товара */
+.card {
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    transition: transform .2s, box-shadow .2s;
+    cursor: pointer;
+}
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.card img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+}
+.card h2 {
+    font-size: 1.1rem;
+    margin: .75rem 1rem .25rem;
+}
+.card p {
+    margin: .25rem 1rem;
+    font-size: .9rem;
+}
+.card button {
+    display: block;
+    width: calc(100% - 2rem);
+    margin: .75rem 1rem 1rem;
+    padding: .5rem;
+    background: #2980b9;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.card button:hover {
+    background: #2471a3;
+}
+
+/* Модалки */
+.modal {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    z-index: 1000;
+}
+.modal h2 {
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    text-align: center;
+}
+.modal form input,
+.modal form textarea {
+    width: 100%;
+    margin-bottom: .75rem;
+    padding: .5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+.modal form button {
+    width: 100%;
+    padding: .5rem;
+    background: #27ae60;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.modal form button:hover {
+    background: #219150;
+}
+.modal button {
+    margin-top: .5rem;
+    background: #bdc3c7;
+    color: #2c3e50;
+}
+.modal button:hover {
+    background: #95a5a6;
+}
+
+/* Спиннер */
+.spinner-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(255,255,255,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+.spinner {
+    width: 48px;
+    height: 48px;
+    border: 5px solid #eee;
+    border-top-color: #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Admin Form Styles */
+#adminApp {
+    padding: 2rem;
+    max-width: 500px;
+    margin: 2rem auto;
+}
+#adminApp .modal {
+    position: static;
+    transform: none;
+}
+#adminApp h2 {
+    font-size: 1.5rem;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+#adminApp input,
+#adminApp select,
+#adminApp textarea {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+#adminApp button {
+    width: 100%;
+    padding: 0.6rem;
+    background: #2980b9;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+#adminApp button:hover {
+    background: #2471a3;
+}
+#adminApp .message {
+    margin-bottom: 1rem;
+    font-weight: bold;
+    color: #27ae60;
+    text-align: center;
+}

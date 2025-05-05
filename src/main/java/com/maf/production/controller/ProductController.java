@@ -3,13 +3,17 @@ package com.maf.production.controller;
 import com.maf.production.dto.ApiResponse;
 import com.maf.production.dto.ProductDTO;
 import com.maf.production.model.AvailabilityStatus;
+import com.maf.production.model.ProductionType;
 import com.maf.production.service.ProductService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -18,6 +22,10 @@ import java.util.List;
 public class ProductController {
     @Autowired
     private ProductService productService;
+
+    public ProductController(ProductService productService) {
+        this.productService = productService;
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<ProductDTO>>> getAllProducts() {
@@ -31,11 +39,36 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.success(product));
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
-    public ResponseEntity<ApiResponse<ProductDTO>> createProduct(@Valid @RequestBody ProductDTO productDTO) {
-        ProductDTO createdProduct = productService.createProduct(productDTO);
-        return ResponseEntity.ok(ApiResponse.success("Продукт успешно создан", createdProduct));
+    public ResponseEntity<ApiResponse<ProductDTO>> createProduct(
+            @RequestParam("name")           String name,
+            @RequestParam("price")          BigDecimal price,
+            @RequestParam("categoryName")   String categoryName,
+            @RequestParam("subcategoryName")String subcategoryName,
+            @RequestParam("articleNumber")  String articleNumber,
+            @RequestParam("description")    String description,
+            @RequestParam("dimensions")     String dimensions,
+            @RequestParam("availability")   String availability,
+            @RequestParam("productionType") String productionType,
+            @RequestParam(value = "file", required = false) MultipartFile file
+    ) {
+        // Собираем DTO из параметров
+        ProductDTO dto = new ProductDTO();
+        dto.setName(name);
+        dto.setPrice(price);
+        dto.setCategoryName(categoryName);
+        dto.setSubcategoryName(subcategoryName);
+        dto.setArticleNumber(articleNumber);
+        dto.setDescription(description);
+        dto.setDimensions(dimensions);
+        dto.setAvailability(AvailabilityStatus.valueOf(availability));
+        dto.setProductionType(ProductionType.valueOf(productionType));
+
+        // Вызываем сервис, передаём DTO и файл
+        ProductDTO created = productService.create(dto, file);
+
+        return ResponseEntity.ok(ApiResponse.success(created));
     }
 
     @PutMapping("/{id}")
