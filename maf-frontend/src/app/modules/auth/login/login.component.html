@@ -1,0 +1,53 @@
+<div class="login-container">
+  <mat-card class="login-card">
+    <mat-card-header>
+      <mat-card-title>Вход в систему</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      @if (successMessage) {
+        <div class="success-message">
+          {{ successMessage }}
+        </div>
+      }
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput formControlName="email" type="email" required>
+          @if (loginForm.controls['email'].hasError('required') && loginForm.controls['email'].touched) {
+            <mat-error>Email обязателен</mat-error>
+          }
+          @if (loginForm.controls['email'].hasError('email')) {
+            <mat-error>Введите корректный email</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Пароль</mat-label>
+          <input matInput formControlName="password" type="password" required>
+          @if (loginForm.controls['password'].hasError('required') && loginForm.controls['password'].touched) {
+            <mat-error>Пароль обязателен</mat-error>
+          }
+        </mat-form-field>
+
+        @if (errorMessage) {
+          <div class="error-message">
+            {{ errorMessage }}
+          </div>
+        }
+
+        <div class="form-actions">
+          <button mat-raised-button color="primary" type="submit" [disabled]="loginForm.invalid || isLoading">
+            @if (isLoading) {
+              <mat-spinner diameter="20" color="accent"></mat-spinner>
+            } @else {
+              <span>Войти</span>
+            }
+          </button>
+          <a mat-button routerLink="/auth/register">Зарегистрироваться</a>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>
